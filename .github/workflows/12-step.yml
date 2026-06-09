@@ -1,0 +1,55 @@
+name: Paso 12 — Proxy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/structural/Proxy.kt'
+
+jobs:
+  check_step_12:
+    name: Verificar Paso 12
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que Proxy.kt implementa Proxy
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/structural/Proxy.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 12 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'interface\\s+(Subject|Sujeto)\\b' "$FILE"; then
+            echo "⏭️ Debe existir una interfaz `Subject` o `Sujeto`."
+            exit 0
+          fi
+
+          if ! grep -Eq 'class\\s+Proxy\\b|class\\s+[A-Za-z0-9_]*Proxy[A-Za-z0-9_]*\\s*:\\s*(Subject|Sujeto)' "$FILE"; then
+            echo "⏭️ Debe existir una clase `Proxy` que implemente el sujeto."
+            exit 0
+          fi
+
+          echo "✅ Paso 12 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 13 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/13-step.md)"

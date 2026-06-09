@@ -1,0 +1,55 @@
+name: Paso 4 — Prototipo
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/creational/Prototype.kt'
+
+jobs:
+  check_step_4:
+    name: Verificar Paso 4
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que Prototype.kt implementa Prototipo
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/creational/Prototype.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 4 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'interface\\s+(Prototype|Prototipo)\\b' "$FILE"; then
+            echo "⏭️ Debe existir una interfaz `Prototype` o `Prototipo`."
+            exit 0
+          fi
+
+          if ! grep -Eq '(fun\\s+clone\\s*\\(|\\bcopy\\s*\\()' "$FILE"; then
+            echo "⏭️ Debes implementar `clone()` o usar `copy()` como mecanismo de clonación."
+            exit 0
+          fi
+
+          echo "✅ Paso 4 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 5 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/5-step.md)"

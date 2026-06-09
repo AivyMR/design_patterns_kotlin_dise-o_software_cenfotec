@@ -1,0 +1,55 @@
+name: Paso 19 — Estado
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/behavioral/State.kt'
+
+jobs:
+  check_step_19:
+    name: Verificar Paso 19
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que State.kt implementa Estado
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/behavioral/State.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 19 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'interface\\s+(State|Estado)\\b' "$FILE"; then
+            echo "⏭️ Debe existir una interfaz `State` o `Estado`."
+            exit 0
+          fi
+
+          if ! grep -Eq 'fun\\s+(handle|manejar)\\s*\\(' "$FILE"; then
+            echo "⏭️ Debe existir `handle(...)` o `manejar(...)`."
+            exit 0
+          fi
+
+          echo "✅ Paso 19 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 20 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/20-step.md)"

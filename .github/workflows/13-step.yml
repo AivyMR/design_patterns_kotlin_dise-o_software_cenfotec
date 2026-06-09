@@ -1,0 +1,55 @@
+name: Paso 13 — Cadena de responsabilidad
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/behavioral/ChainOfResponsibility.kt'
+
+jobs:
+  check_step_13:
+    name: Verificar Paso 13
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que ChainOfResponsibility.kt implementa Cadena de responsabilidad
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/behavioral/ChainOfResponsibility.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 13 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'abstract\\s+fun\\s+handle\\s*\\(' "$FILE"; then
+            echo "⏭️ Debe existir un método abstracto `handle(...)`."
+            exit 0
+          fi
+
+          if ! grep -Eq '\\bnext\\b' "$FILE"; then
+            echo "⏭️ Debe existir una referencia `next` al siguiente manejador."
+            exit 0
+          fi
+
+          echo "✅ Paso 13 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 14 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/14-step.md)"

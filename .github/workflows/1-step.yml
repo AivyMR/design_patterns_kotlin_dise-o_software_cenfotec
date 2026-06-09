@@ -1,0 +1,55 @@
+name: Paso 1 — Método fábrica
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/creational/FactoryMethod.kt'
+
+jobs:
+  check_step_1:
+    name: Verificar Paso 1
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que FactoryMethod.kt implementa Método fábrica
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/creational/FactoryMethod.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 1 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'interface\\s+(Product|Producto)\\b' "$FILE"; then
+            echo "⏭️ El archivo debe declarar una interfaz `Product` o `Producto`."
+            exit 0
+          fi
+
+          if ! grep -Eq '(abstract\\s+fun\\s+(create|crearProducto)\\s*\\(|fun\\s+createProduct\\s*\\()' "$FILE"; then
+            echo "⏭️ Debe existir un método fábrica abstracto como `create`, `createProduct` o `crearProducto`."
+            exit 0
+          fi
+
+          echo "✅ Paso 1 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 2 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/2-step.md)"

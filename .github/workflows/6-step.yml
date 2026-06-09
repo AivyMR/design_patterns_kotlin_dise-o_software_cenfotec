@@ -1,0 +1,60 @@
+name: Paso 6 — Adaptador
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/structural/Adapter.kt'
+
+jobs:
+  check_step_6:
+    name: Verificar Paso 6
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que Adapter.kt implementa Adaptador
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/structural/Adapter.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 6 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'interface\\s+(Target|Objetivo)\\b' "$FILE"; then
+            echo "⏭️ Debe existir una interfaz `Target` u `Objetivo`."
+            exit 0
+          fi
+
+          if ! grep -Eq 'class\\s+[A-Za-z0-9_]+\\s*:\\s*(Target|Objetivo)' "$FILE"; then
+            echo "⏭️ Debe existir una clase que implemente la interfaz objetivo."
+            exit 0
+          fi
+
+          if ! grep -Eq '(private\\s+val|ServicioPagoLegacy|Adaptado)' "$FILE"; then
+            echo "⏭️ El adaptador debe envolver otra clase por composición."
+            exit 0
+          fi
+
+          echo "✅ Paso 6 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 7 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/7-step.md)"

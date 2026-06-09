@@ -1,0 +1,55 @@
+name: Paso 20 — Estrategia
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/behavioral/Strategy.kt'
+
+jobs:
+  check_step_20:
+    name: Verificar Paso 20
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que Strategy.kt implementa Estrategia
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/behavioral/Strategy.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 20 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'interface\\s+(Strategy|Estrategia)\\b' "$FILE"; then
+            echo "⏭️ Debe existir una interfaz `Strategy` o `Estrategia`."
+            exit 0
+          fi
+
+          if ! grep -Eq 'fun\\s+(execute|ejecutar)\\s*\\(' "$FILE"; then
+            echo "⏭️ Debe existir `execute(...)` o `ejecutar(...)`."
+            exit 0
+          fi
+
+          echo "✅ Paso 20 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 21 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/21-step.md)"

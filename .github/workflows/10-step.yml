@@ -1,0 +1,50 @@
+name: Paso 10 — Fachada
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/structural/Facade.kt'
+
+jobs:
+  check_step_10:
+    name: Verificar Paso 10
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que Facade.kt implementa Fachada
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/structural/Facade.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 10 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'class\\s+(Facade|Fachada)\\b' "$FILE"; then
+            echo "⏭️ Debe existir una clase `Facade` o `Fachada`."
+            exit 0
+          fi
+
+          echo "✅ Paso 10 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 11 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/11-step.md)"

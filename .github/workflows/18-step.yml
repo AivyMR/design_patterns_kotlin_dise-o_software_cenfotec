@@ -1,0 +1,55 @@
+name: Paso 18 — Observador
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/behavioral/Observer.kt'
+
+jobs:
+  check_step_18:
+    name: Verificar Paso 18
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que Observer.kt implementa Observador
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/behavioral/Observer.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 18 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'interface\\s+(Observer|Observador)\\b' "$FILE"; then
+            echo "⏭️ Debe existir una interfaz `Observer` u `Observador`."
+            exit 0
+          fi
+
+          if ! grep -Eq 'fun\\s+(update|actualizar)\\s*\\(' "$FILE"; then
+            echo "⏭️ Debe existir `update(...)` o `actualizar(...)`."
+            exit 0
+          fi
+
+          echo "✅ Paso 18 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 19 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/19-step.md)"

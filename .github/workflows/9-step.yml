@@ -1,0 +1,60 @@
+name: Paso 9 — Decorador
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/structural/Decorator.kt'
+
+jobs:
+  check_step_9:
+    name: Verificar Paso 9
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que Decorator.kt implementa Decorador
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/structural/Decorator.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 9 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'interface\\s+(Component|Componente)\\b' "$FILE"; then
+            echo "⏭️ Debe existir una interfaz `Component` o `Componente`."
+            exit 0
+          fi
+
+          if ! grep -Eq 'class\\s+[A-Za-z0-9_]*Decorator[A-Za-z0-9_]*|class\\s+Decorador' "$FILE"; then
+            echo "⏭️ Debe existir una clase decoradora."
+            exit 0
+          fi
+
+          if ! grep -Eq 'private\\s+val\\s+[a-zA-Z0-9_]+:\\s*(Component|Componente)' "$FILE"; then
+            echo "⏭️ El decorador debe envolver a otro componente."
+            exit 0
+          fi
+
+          echo "✅ Paso 9 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 10 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/10-step.md)"

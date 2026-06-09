@@ -1,0 +1,50 @@
+name: Paso 5 — Instancia única
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/creational/Singleton.kt'
+
+jobs:
+  check_step_5:
+    name: Verificar Paso 5
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que Singleton.kt implementa Instancia única
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/creational/Singleton.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 5 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq '(\\bobject\\s+[A-Z][A-Za-z0-9_]*|companion\\s+object)' "$FILE"; then
+            echo "⏭️ Debes usar `object` o `companion object` para modelar el singleton."
+            exit 0
+          fi
+
+          echo "✅ Paso 5 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar Paso 6 en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/6-step.md)"

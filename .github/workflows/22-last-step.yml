@@ -1,0 +1,67 @@
+name: Paso 22 — Visitante (último paso)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/main/kotlin/patterns/behavioral/Visitor.kt'
+
+jobs:
+  check_step_22:
+    name: Verificar Paso 22
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que Visitor.kt implementa Visitante
+        id: check
+        run: |
+          FILE="src/main/kotlin/patterns/behavioral/Visitor.kt"
+
+          if [ ! -f "$FILE" ]; then
+            echo "⏭️ Paso 22 aún no completado — archivo no encontrado."
+            exit 0
+          fi
+
+          if ! grep -Eq 'interface\\s+(Visitor|Visitante)\\b' "$FILE"; then
+            echo "⏭️ Debe existir una interfaz `Visitor` o `Visitante`."
+            exit 0
+          fi
+
+          if ! grep -Eq 'fun\\s+(visit|visitar)\\s*\\(' "$FILE"; then
+            echo "⏭️ Debe existir `visit(...)` o `visitar(...)`."
+            exit 0
+          fi
+
+          echo "✅ Paso 22 verificado correctamente."
+          echo "result=success" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar revisión final en el issue
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo comentario."
+            exit 0
+          fi
+          gh issue comment "$ISSUE_NUMBER"             --body "$(cat .github/steps/x-review.md)"
+
+      - name: Cerrar el issue de ejercicio
+        if: steps.check.outputs.result == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=$(gh issue list --label "ejercicio" --state open --json number --jq '.[0].number')
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⏭️ No hay issue de ejercicio abierto — omitiendo cierre."
+            exit 0
+          fi
+          gh issue close "$ISSUE_NUMBER"             --comment "🎓 ¡Ejercicio completado exitosamente! Revisa el resumen arriba."
