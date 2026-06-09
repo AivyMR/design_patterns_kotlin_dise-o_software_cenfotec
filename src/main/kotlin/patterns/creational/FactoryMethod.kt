@@ -10,19 +10,24 @@ abstract class TallerPendiente {
         return "Pedido preparado para ${producto.descripcion()}"
     }
 
-    protected open fun crearProductoPendiente(): ProductoPendienteFactoryMethod {
-        // TODO: reemplaza este método por un verdadero método fábrica abstracto.
-        return object : ProductoPendienteFactoryMethod {
-            override fun descripcion(): String = "producto temporal"
-        }
-    }
+    // Método fábrica: cada subclase decide qué `ProductoPendienteFactoryMethod` crear
+    protected abstract fun crearProductoPendiente(): ProductoPendienteFactoryMethod
 }
 
 class FactoryMethodDemo {
     fun ejecutar(): String {
-        // TODO: crea un creador concreto y úsalo desde aquí.
-        return TallerLocal().prepararPedido()
+        // La creación del producto queda encapsulada en el creador concreto
+        val taller: TallerPendiente = TallerLocal()
+        return taller.prepararPedido()
     }
 }
 
-class TallerLocal : TallerPendiente()
+// Producto concreto
+class ProductoLocal : ProductoPendienteFactoryMethod {
+    override fun descripcion(): String = "pendiente local"
+}
+
+// Creador concreto
+class TallerLocal : TallerPendiente() {
+    override fun crearProductoPendiente(): ProductoPendienteFactoryMethod = ProductoLocal()
+}
